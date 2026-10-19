@@ -60,7 +60,7 @@ async function handleRegister(e) {
     e.preventDefault();
     const nama = document.getElementById('reg-nama').value;
     const email = document.getElementById('reg-email').value;
-    const no_hp = document.getElementById('reg-phone').value;
+    const no_hp = document.getElementById('reg-hp').value; // Diubah dari reg-phone menjadi reg-hp
     const password = document.getElementById('reg-password').value;
 
     try {
