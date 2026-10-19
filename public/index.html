@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SmartFarm</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0d9488">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        jade: {
+                            50: '#f0fdfa', 100: '#ccfbf1', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e', 800: '#115e59', 900: '#134e4a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Solusi Bug Warna Input Autofill Browser */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active {
+            -webkit-text-fill-color: #1e293b !important;
+            -webkit-box-shadow: 0 0 0px 1000px #f8fafc inset !important;
+            transition: background-color 5000s ease-in-out 0s;
+        }
+
+        /* Animasi Toast Modern */
+        @keyframes slideUpFade {
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .toast-enter { animation: slideUpFade 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .toast-exit { opacity: 0; transform: translateY(10px); transition: all 0.3s ease; }
+    </style>
+</head>
+<body class="h-full flex flex-col justify-between font-sans text-slate-800 antialiased selection:bg-jade-500 selection:text-white">
+
+    <!-- BANNER STATUS OFFLINE -->
+    <div id="offline-banner" class="hidden bg-rose-500 text-white text-[10px] py-1 text-center font-bold tracking-widest uppercase z-50">
+        <i class="fa-solid fa-wifi-slash mr-1"></i> Mode Offline (Data akan disinkronkan)
+    </div>
+
+    <!-- WADAH TOAST NOTIFICATION -->
+    <div id="toast-container" class="fixed top-5 inset-x-0 mx-auto w-[90%] max-w-sm z-[100] flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- VIEW 1: AUTHENTICATION (LOGIN & REGISTER) -->
+    <div id="view-auth" class="min-h-screen bg-gradient-to-br from-jade-700 via-jade-800 to-slate-900 flex flex-col justify-center px-6 py-8 text-white relative">
+        <div class="sm:mx-auto sm:w-full sm:max-w-md text-center space-y-2">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-xl mb-1">
+                <i class="fa-solid fa-seedling text-3xl text-yellow-300"></i>
+            </div>
+            <h2 class="text-2xl font-black tracking-tight">SmartFarm</h2>
+            <p class="text-xs text-jade-100">Sistem SmartFarm</p>
+        </div>
+
+        <div class="mt-6 sm:mx-auto sm:w-full sm:max-w-md">
+            <div class="bg-white text-slate-800 py-7 px-6 shadow-2xl rounded-3xl border border-slate-100 space-y-5">
+                
+                <div class="flex p-1 bg-slate-100 rounded-xl">
+                    <button id="btn-tab-login" type="button" onclick="switchAuthTab('login')" class="flex-1 py-2.5 text-xs font-bold rounded-xl bg-white shadow-sm text-jade-700 transition">Masuk</button>
+                    <button id="btn-tab-register" type="button" onclick="switchAuthTab('register')" class="flex-1 py-2.5 text-xs font-bold rounded-xl text-slate-500 hover:text-slate-700 transition">Daftar Akun</button>
+                </div>
+
+                <!-- FORM LOGIN -->
+                <form id="form-login" onsubmit="handleLogin(event)" class="space-y-3.5">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Email</label>
+                        <input type="email" id="login-email" required placeholder="nama@email.com" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-jade-500 focus:outline-none bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Password</label>
+                        <div class="relative flex items-center">
+                            <input type="password" id="login-password" required placeholder="••••••••" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-jade-500 focus:outline-none bg-slate-50 pr-10">
+                            <button type="button" onclick="togglePassword('login-password', 'eye-login-icon')" class="absolute right-3 focus:outline-none text-slate-400 hover:text-slate-600 cursor-pointer p-1">
+                                <i id="eye-login-icon" class="fa-solid fa-eye text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full py-3.5 bg-jade-600 hover:bg-jade-700 text-white font-bold rounded-xl shadow-lg shadow-jade-600/30 text-xs transition">
+                        Masuk ke Kebun
+                    </button>
+                </form>
+
+                <!-- FORM REGISTER -->
+                <form id="form-register" onsubmit="handleRegister(event)" class="space-y-3.5 hidden">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Lengkap</label>
+                        <input type="text" id="reg-nama" required placeholder="Nama Lengkap Anda" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-jade-500 focus:outline-none bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Email</label>
+                        <input type="email" id="reg-email" required placeholder="nama@email.com" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-jade-500 focus:outline-none bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nomor WhatsApp</label>
+                        <input type="tel" id="reg-hp" required placeholder="081234567890" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-jade-500 focus:outline-none bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Password</label>
+                        <div class="relative flex items-center">
+                            <input type="password" id="reg-password" required placeholder="••••••••" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-jade-500 focus:outline-none bg-slate-50 pr-10">
+                            <button type="button" onclick="togglePassword('reg-password', 'eye-reg-icon')" class="absolute right-3 focus:outline-none text-slate-400 hover:text-slate-600 cursor-pointer p-1">
+                                <i id="eye-reg-icon" class="fa-solid fa-eye text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full py-3.5 bg-jade-600 hover:bg-jade-700 text-white font-bold rounded-xl shadow-lg shadow-jade-600/30 text-xs transition">
+                        Daftar Akun Baru
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIEW 2: MAIN APP LAYOUT (SPA) -->
+    <div id="view-app" class="hidden flex-1 flex flex-col max-w-md mx-auto w-full bg-slate-50 min-h-screen relative pb-20 shadow-2xl border-x border-slate-200">
+
+        <!-- Top Header Bar -->
+        <header class="bg-white px-5 py-4 sticky top-0 z-20 shadow-sm flex justify-between items-center border-b border-slate-100">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-jade-50 text-jade-600 flex items-center justify-center font-bold">
+                    <i class="fa-solid fa-leaf"></i>
+                </div>
+                <div>
+                <h1 class="text-sm font-bold text-slate-800 leading-tight" id="header-user-name">Petani</h1>
+                <p class="text-[10px] text-slate-500 flex items-center gap-1" id="header-location">
+                    <i class="fa-solid fa-location-dot text-jade-500 text-[9px]"></i> Kebun Pintar
+                </p>
+                </div>
+            </div>
+            <button onclick="handleLogout()" type="button" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 text-xs transition" title="Keluar Akun">
+                <i class="fa-solid fa-right-from-bracket"></i>
+            </button>
+        </header>
+
+        <!-- Main Content Body -->
+        <main class="flex-1 p-5 space-y-5 overflow-y-auto no-scrollbar">
+
+            <!-- PAGE 1: DASHBOARD -->
+            <div id="page-dashboard" class="space-y-5">
+                
+                <!-- Warm Greeting Card -->
+                <div class="bg-gradient-to-br from-jade-600 to-jade-800 text-white rounded-3xl p-6 shadow-xl shadow-jade-600/20 relative overflow-hidden">
+                    <div class="absolute -right-4 -bottom-4 opacity-10 text-9xl"><i class="fa-solid fa-sun"></i></div>
+                    <div class="relative z-10">
+                        <h3 class="text-xl font-bold mb-1" id="greeting-text">Halo! 👋</h3>
+                        <p class="text-xs text-jade-100 mb-4" id="greeting-sub">Sudah siap merawat kebun hari ini?</p>
+                    </div>
+
+                    <!-- Cuaca Saat Ini -->
+                    <div class="grid grid-cols-3 gap-3 pt-4 border-t border-white/20 text-center relative z-10">
+                        <div class="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/10 shadow-inner">
+                            <i id="weather-icon" class="fa-solid fa-temperature-high text-amber-300 text-sm mb-1.5 block"></i>
+                            <span id="weather-temp" class="text-sm font-bold block">-°C</span>
+                            <span class="text-[9px] text-jade-100 uppercase tracking-wide">Suhu</span>
+                        </div>
+                        <div class="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/10 shadow-inner">
+                            <i class="fa-solid fa-droplet text-cyan-300 text-sm mb-1.5 block"></i>
+                            <span id="weather-humidity" class="text-sm font-bold block">-%</span>
+                            <span class="text-[9px] text-jade-100 uppercase tracking-wide">Lembap</span>
+                        </div>
+                        <div class="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/10 shadow-inner">
+                            <i class="fa-solid fa-flask text-emerald-300 text-sm mb-1.5 block"></i>
+                            <span class="text-sm font-bold block">6.5</span>
+                            <span class="text-[9px] text-jade-100 uppercase tracking-wide">pH Media</span>
+                        </div>
+                    </div>
+
+                    <!-- Slider Prakiraan Cuaca Per Jam -->
+                    <div class="mt-5 relative z-10">
+                        <h4 class="text-[10px] font-bold uppercase tracking-wider text-jade-100 mb-2">Prakiraan Per Jam</h4>
+                        <div id="hourly-weather-container" class="flex gap-3 overflow-x-auto no-scrollbar pb-2 snap-x">
+                            <div class="text-xs text-jade-200">Memuat prakiraan cuaca...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card Proyek Aktif -->
+                <div id="project-card-container" class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 space-y-4 relative overflow-hidden">
+                    <div class="flex justify-between items-center relative z-10">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-jade-700 bg-jade-50 px-3 py-1.5 rounded-lg">Proyek Aktif</span>
+                        
+                        <div class="flex items-center gap-2">
+                            <button onclick="handleDeleteProject()" type="button" class="w-7 h-7 rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-100 flex items-center justify-center text-xs transition shadow-sm" title="Hapus / Reset Proyek">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                            <span class="text-[11px] font-medium text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg" id="dash-project-days">Hari ke-1</span>
+                        </div>
+                    </div>
+
+                    <div class="relative z-10">
+                        <h2 class="text-lg font-bold text-slate-800" id="dash-crop-name">Belum Ada Proyek</h2>
+                        <p class="text-xs text-slate-500 mt-0.5" id="dash-project-loc">Silakan mulai proyek tanam baru</p>
+                    </div>
+
+                    <div class="space-y-1.5 pt-2 relative z-10">
+                        <div class="flex justify-between text-[11px] font-bold">
+                            <span class="text-slate-500">Progres Masa Tanam</span>
+                            <span class="text-jade-600" id="dash-progress-percent">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2.5 shadow-inner">
+                            <div id="dash-progress-bar" class="bg-gradient-to-r from-jade-400 to-jade-600 h-2.5 rounded-full transition-all duration-700 ease-out" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="toggleModalProject()" type="button" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-4 px-5 rounded-2xl shadow-md flex items-center justify-between text-xs transition">
+                    <span class="flex items-center gap-2">
+                        <i class="fa-solid fa-plus-circle text-jade-400 text-sm"></i> Mulai Proyek Tanam Baru
+                    </span>
+                    <i class="fa-solid fa-arrow-right text-slate-400"></i>
+                </button>
+            </div>
+
+            <!-- PAGE 2: SOP TASKS -->
+            <div id="page-tasks" class="hidden space-y-5">
+                <div class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                    <div>
+                        <h2 class="text-sm font-bold text-slate-800">SOP Tugas Harian</h2>
+                        <p class="text-[10px] text-slate-500">Ketuk centang untuk lapor</p>
+                    </div>
+                    <span id="task-badge-count" class="text-xs font-bold bg-amber-100 text-amber-800 px-3 py-1.5 rounded-lg">0 Pending</span>
+                </div>
+                <div id="tasks-container" class="space-y-3"></div>
+
+                <div class="mt-6">
+                    <h3 class="text-xs font-bold text-slate-800 mb-3 px-1 border-l-4 border-emerald-500 pl-2">Riwayat Laporan Hari Ini</h3>
+                    <div id="history-container" class="space-y-3">
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center text-[10px] text-slate-400" id="empty-history">
+                            Belum ada tugas yang diselesaikan hari ini.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <h3 class="text-xs font-bold text-slate-800 mb-3 px-1 border-l-4 border-indigo-500 pl-2">Prediksi & Agenda</h3>
+                    <div id="predictive-container" class="space-y-3"></div>
+                </div>
+            </div>
+
+            <!-- PAGE 3: AI CHAT -->
+            <div id="page-ai" class="hidden flex flex-col h-[75vh] space-y-4">
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg font-bold">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800">Penyuluh AI</h3>
+                        <p class="text-[10px] text-slate-500">Asisten Pintar Pertanian Pesisir</p>
+                    </div>
+                </div>
+
+                <div id="chat-box" class="flex-1 bg-white rounded-2xl p-4 border border-slate-100 overflow-y-auto space-y-4 shadow-inner no-scrollbar">
+                    <div class="bg-indigo-50 text-indigo-900 p-3.5 rounded-2xl max-w-[85%] border border-indigo-100 text-xs leading-relaxed shadow-sm">
+                        Halo! Saya AI Penyuluh Pertanian. Ada masalah hama, penyakit, atau butuh saran nutrisi melon hari ini? Kirimkan foto daun atau buahnya dari kebun jika perlu! 📷
+                    </div>
+                </div>
+
+                <form onsubmit="handleAIChat(event)" class="flex gap-2 items-center">
+                    <button type="button" onclick="document.getElementById('camera-input').click()" class="w-11 h-11 flex-shrink-0 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center hover:bg-indigo-100 transition shadow-sm border border-indigo-100">
+                        <i class="fa-solid fa-camera text-lg"></i>
+                    </button>
+                    <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden" onchange="handleCameraUpload(event)">
+                    
+                    <input type="text" id="ai-input" placeholder="Tanya sesuatu..." class="flex-1 px-4 py-3 rounded-2xl border border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white shadow-sm">
+                    
+                    <button type="submit" class="w-11 h-11 flex-shrink-0 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition flex items-center justify-center shadow-md shadow-indigo-200">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+
+            <!-- PAGE 4: PROFILE -->
+            <div id="page-profile" class="hidden space-y-4">
+                <div class="bg-white p-6 rounded-3xl border border-slate-100 text-center space-y-3 shadow-sm">
+                    <div class="w-20 h-20 rounded-full bg-jade-100 text-jade-700 mx-auto flex items-center justify-center text-3xl font-black shadow-inner" id="prof-avatar">
+                        U
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base" id="prof-nama">Pengguna</h3>
+                        <p class="text-xs text-slate-500 mt-1" id="prof-email">user@email.com</p>
+                    </div>
+                </div>
+                
+                <button onclick="handleLogout()" type="button" class="w-full bg-rose-50 text-rose-600 font-bold py-4 px-5 rounded-2xl shadow-sm border border-rose-100 text-xs transition">
+                    Keluar dari Akun
+                </button>
+            </div>
+
+        </main>
+
+        <!-- Bottom Navigation Bar -->
+        <nav class="fixed bottom-0 max-w-md w-full bg-white border-t border-slate-100 px-6 py-3 flex justify-between items-center z-30 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)]">
+            <button onclick="switchPage('dashboard')" id="nav-dashboard" type="button" class="flex flex-col items-center gap-1.5 text-jade-600 font-bold transition-all">
+                <i class="fa-solid fa-house text-lg"></i>
+                <span class="text-[10px]">Beranda</span>
+            </button>
+            <button onclick="switchPage('tasks')" id="nav-tasks" type="button" class="flex flex-col items-center gap-1.5 text-slate-400 hover:text-slate-600 font-medium transition-all">
+                <i class="fa-solid fa-list-check text-lg"></i>
+                <span class="text-[10px]">SOP Tugas</span>
+            </button>
+            <button onclick="switchPage('ai')" id="nav-ai" type="button" class="flex flex-col items-center gap-1.5 text-slate-400 hover:text-slate-600 font-medium transition-all">
+                <i class="fa-solid fa-robot text-lg"></i>
+                <span class="text-[10px]">AI Pintar</span>
+            </button>
+            <button onclick="switchPage('profile')" id="nav-profile" type="button" class="flex flex-col items-center gap-1.5 text-slate-400 hover:text-slate-600 font-medium transition-all">
+                <i class="fa-solid fa-user text-lg"></i>
+                <span class="text-[10px]">Profil</span>
+            </button>
+        </nav>
+
+    </div>
+
+<!-- MODAL NEW PROJECT -->
+<div id="modal-project" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 transition-opacity">
+    <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 space-y-5 shadow-2xl">
+        
+        <!-- Header Modal -->
+        <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+            <h3 class="font-bold text-slate-800 text-sm">Mulai Proyek Tanam Baru</h3>
+            <button onclick="toggleModalProject()" type="button" class="text-slate-400 hover:text-rose-500 bg-slate-50 w-8 h-8 rounded-full flex items-center justify-center transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        
+        <!-- Form Proyek -->
+        <form id="form-new-project" onsubmit="handleCreateProject(event)" class="space-y-4 text-xs">
+            
+            <!-- Varietas Melon -->
+            <div>
+                <label class="block font-semibold text-slate-600 mb-1.5">Pilih Varietas Melon</label>
+                <div class="relative">
+                    <select id="proj-crop" class="w-full p-3.5 pr-10 border border-slate-200 rounded-xl bg-slate-50 font-medium text-slate-800 text-xs appearance-none focus:ring-2 focus:ring-jade-500 focus:outline-none cursor-pointer shadow-sm">
+                        <option value="Melon Alina" class="bg-white text-slate-800 py-2">Melon Alina</option>
+                        <option value="Melon Glamour" class="bg-white text-slate-800 py-2">Melon Glamour</option>
+                        <option value="Melon Intanon" class="bg-white text-slate-800 py-2">Melon Intanon</option>
+                        <option value="Melon Action 434" class="bg-white text-slate-800 py-2">Melon Action 434</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-400">
+                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Luas Lahan & Modal Awal -->
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1.5">Luas Lahan (m²)</label>
+                    <input type="number" id="proj-area" value="50" required class="w-full p-3.5 border border-slate-200 rounded-xl bg-slate-50 font-medium focus:ring-2 focus:ring-jade-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1.5">Modal Awal (Rp)</label>
+                    <input type="number" id="proj-modal" value="250000" required class="w-full p-3.5 border border-slate-200 rounded-xl bg-slate-50 font-medium focus:ring-2 focus:ring-jade-500 focus:outline-none">
+                </div>
+            </div>
+
+            <!-- Lokasi Kebun -->
+            <div>
+                <label class="block font-semibold text-slate-600 mb-1.5">Lokasi Kebun</label>
+                <input type="text" id="proj-location" value="Halaman Rumah" required class="w-full p-3.5 border border-slate-200 rounded-xl bg-slate-50 font-medium focus:ring-2 focus:ring-jade-500 focus:outline-none">
+            </div>
+
+            <!-- Tombol Submit -->
+            <button type="submit" class="w-full py-4 bg-jade-600 text-white font-bold rounded-xl shadow-lg shadow-jade-600/30 text-xs mt-2 hover:bg-jade-700 transition">
+                Mulai & Generate SOP Otomatis
+            </button>
+        </form>
+    </div>
+</div>
+
+    <!-- MODAL KONFIRMASI LOGOUT -->
+    <div id="modal-logout" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center space-y-4">
+            <div class="w-16 h-16 rounded-full bg-rose-50 text-rose-500 mx-auto flex items-center justify-center text-3xl mb-2">
+                <i class="fa-solid fa-right-from-bracket"></i>
+            </div>
+            <h3 class="font-bold text-slate-800 text-lg">Keluar Akun?</h3>
+            <p class="text-xs text-slate-500">Anda tidak akan menerima notifikasi SOP saat sedang keluar. Apakah Anda yakin?</p>
+            
+            <div class="flex gap-3 pt-3">
+                <button onclick="toggleModalLogout()" type="button" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs transition">
+                    Batal
+                </button>
+                <button onclick="confirmLogout()" type="button" class="flex-1 py-3 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl shadow-lg shadow-rose-500/30 text-xs transition">
+                    Ya, Keluar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL LAPORAN TUGAS -->
+    <div id="modal-task" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 transition-opacity">
+        <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 space-y-5 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-800 text-sm">Laporan Kondisi Tanaman</h3>
+                <button onclick="closeTaskModal()" type="button" class="text-slate-400 hover:text-rose-500 bg-slate-50 w-8 h-8 rounded-full flex items-center justify-center transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <form id="form-task-report" onsubmit="submitTaskReport(event)" class="space-y-4 text-xs">
+                <input type="hidden" id="current-task-id">
+                
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1.5">Kondisi Tanaman (Opsional)</label>
+                    <input type="text" id="task-condition" placeholder="Contoh: Daun hijau segar, batang kokoh" class="w-full p-3.5 border border-slate-200 rounded-xl bg-slate-50 font-medium focus:ring-2 focus:ring-jade-500 focus:outline-none">
+                    <p class="text-[9px] text-slate-400 mt-1">*Jika dikosongkan, sistem akan otomatis mencatat kondisi <span class="font-bold text-jade-600">"Aman"</span>.</p>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1.5">Foto Kondisi / Bukti (Opsional)</label>
+                    <div class="flex items-center gap-3">
+                        <button type="button" onclick="document.getElementById('task-photo').click()" class="px-4 py-3 bg-indigo-50 text-indigo-600 font-bold rounded-xl flex items-center gap-2 hover:bg-indigo-100 transition border border-indigo-100">
+                            <i class="fa-solid fa-camera"></i> Ambil Foto
+                        </button>
+                        <span id="task-photo-name" class="text-[10px] text-slate-500 truncate max-w-[150px]">Belum ada foto</span>
+                    </div>
+                    <input type="file" id="task-photo" accept="image/*" capture="environment" class="hidden" onchange="previewTaskPhoto(event)">
+                    
+                    <div id="task-photo-preview-container" class="hidden mt-3 p-1 bg-slate-100 rounded-xl w-28 relative">
+                        <img id="task-photo-preview" src="" class="w-full h-auto rounded-lg object-cover">
+                        <button type="button" onclick="removeTaskPhoto()" class="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px] shadow-md"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-4 bg-jade-600 text-white font-bold rounded-xl shadow-lg shadow-jade-600/30 text-xs mt-2 hover:bg-jade-700 transition">
+                    Simpan Laporan & Selesai
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL KONFIRMASI HAPUS / RESET KEBUN -->
+    <div id="modal-delete-project" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[250] flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center space-y-4">
+            <div class="w-16 h-16 rounded-full bg-rose-50 text-rose-500 mx-auto flex items-center justify-center text-3xl mb-2 shadow-inner">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="font-bold text-slate-800 text-lg">Reset Kebun Ini?</h3>
+            <p class="text-xs text-slate-500 leading-relaxed">Tindakan ini akan <span class="font-bold text-rose-600">menghapus permanen</span> seluruh rekam jejak, foto laporan harian, dan tugas Anda dari database. Data tidak dapat dikembalikan.</p>
+            
+            <div class="flex gap-3 pt-3">
+                <button onclick="toggleModalDeleteProject()" type="button" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs transition">
+                    Batal
+                </button>
+                <button onclick="confirmDeleteProject()" type="button" class="flex-1 py-3 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl shadow-lg shadow-rose-500/30 text-xs transition">
+                    Ya, Hapus
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- UI Logic Core -->
+    <script src="js/ui-core.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
