@@ -5,8 +5,10 @@ const db = require('./db');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
-const PORT = 3000;
-
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server SmartFarm berjalan di port ${PORT}`);
+});
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
