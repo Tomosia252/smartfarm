@@ -2,8 +2,9 @@
 // SMARTFARM - CORE APP LOGIC (app.js)
 // ==========================================
 
-window.API_URL = window.API_URL || 'http://localhost:3000/api';
-let currentUser = JSON.parse(localStorage.getItem('smartfarm_user')) || null;
+window.API_URL = window.location.origin + '/api';
+// atau cukup:
+// window.API_URL = '/api';let currentUser = JSON.parse(localStorage.getItem('smartfarm_user')) || null;
 let activeProjectIdForTask = null; 
 let activeTaskId = null; // FIX MUTLAK: Mengunci ID Tugas di memori JS, bukan di HTML
 let taskPhotoBase64 = null;
