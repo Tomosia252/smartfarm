@@ -183,11 +183,15 @@ app.post('/api/progress', async (req, res) => {
             `INSERT INTO daily_progress (id_project, tanggal, status_siram, kondisi_tanaman, catatan_petani) VALUES (?, ?, ?, ?, ?)`,
             [id_project, tanggal, status_siram, kondisi_tanaman, catatan_petani]
         );
+        
+        // Update status tugas tanpa kolom completed_at agar tidak rawan error
         if (id_task) {
-            await db.query(`UPDATE tasks SET status = 'completed', completed_at = CURRENT_TIMESTAMP WHERE id_task = ?`, [id_task]);
+            await db.query(`UPDATE tasks SET status = 'completed' WHERE id_task = ?`, [id_task]);
         }
+        
         res.json({ status: "success", message: "Laporan harian tersimpan!" });
     } catch (error) {
+        console.error("❌ ERROR SAAT LAPOR TUGAS:", error);
         res.status(500).json({ status: "error", message: "Gagal menyimpan laporan." });
     }
 });

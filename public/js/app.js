@@ -657,25 +657,40 @@ async function submitTaskReport(e) {
         localStorage.setItem('smartfarm_offline_queue', JSON.stringify(offlineQueue));
         showToast("Laporan disimpan offline.", "info");
         
-        fetchTasksForProject(activeProjectIdForTask); // Refresh mini dasbor
-        fetchAllTasks(); // Refresh tab SOP
+        try {
+            if (typeof fetchTasksForProject === 'function') fetchTasksForProject(activeProjectIdForTask);
+            if (typeof fetchAllTasks === 'function') fetchAllTasks();
+        } catch (e) { console.warn("Gagal refresh UI offline:", e); }
         return;
     }
 
     try {
-        await fetch(`${window.API_URL}/progress`, {
+        // 1. Simpan respon dari fetch
+        const response = await fetch(`${window.API_URL}/progress`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        
-        showToast(`Tugas selesai!`, "success");
-        
-        // Refresh UI secara individual agar tidak menghilangkan tugas proyek lainnya
-        fetchTasksForProject(activeProjectIdForTask); 
-        fetchAllTasks(); 
+
+        const data = await response.json();
+
+        // 2. Validasi respon resmi dari server
+        if (response.ok && data.status === 'success') {
+            showToast("Tugas selesai!", "success");
+            
+            // 3. Jalankan refresh UI secara aman (isolated try-catch agar tidak memicu toast error)
+            try {
+                if (typeof fetchTasksForProject === 'function') fetchTasksForProject(activeProjectIdForTask); 
+                if (typeof fetchAllTasks === 'function') fetchAllTasks(); 
+            } catch (uiErr) {
+                console.warn("Gagal memperbarui UI tampilan:", uiErr);
+            }
+        } else {
+            throw new Error(data.message || "Gagal menyimpan laporan.");
+        }
         
     } catch (err) {
+        console.error("❌ Submit Task Error:", err);
         showToast("Gagal menyinkronkan ke server.", "error");
     }
 }
